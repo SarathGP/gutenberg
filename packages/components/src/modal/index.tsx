@@ -99,6 +99,12 @@ function UnforwardedModal(
 		}
 	}, [ contentRef ] );
 
+	const refOnRequestClose =
+		useRef< ModalProps[ 'onRequestClose' ] >( onRequestClose );
+	useEffect( () => {
+		refOnRequestClose.current = onRequestClose;
+	}, [ onRequestClose ] );
+
 	useEffect( () => {
 		openModalCount++;
 
@@ -118,7 +124,7 @@ function UnforwardedModal(
 				ariaHelper.showApp();
 			}
 		};
-	}, [ bodyOpenClassName, onRequestClose ] );
+	}, [ bodyOpenClassName ] );
 
 	// Calls the isContentScrollable callback when the Modal children container resizes.
 	useLayoutEffect( () => {
