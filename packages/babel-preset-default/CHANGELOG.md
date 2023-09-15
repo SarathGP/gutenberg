@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## Enhancements
+
+-   Use `React` as the default scope variable for JSX pragma instead of `@wordpress/element`.
+
 ## 7.25.0 (2023-08-31)
 
 ## 7.24.0 (2023-08-16)
