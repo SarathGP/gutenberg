@@ -52,6 +52,10 @@ export default function useInput() {
 
 			if ( ! hasMultiSelection() ) {
 				if ( event.keyCode === ENTER ) {
+					if ( event.shiftKey ) {
+						return;
+					}
+
 					const clientId = getSelectedBlockClientId();
 					if (
 						! hasBlockSupport(
@@ -133,11 +137,11 @@ export default function useInput() {
 		}
 
 		node.addEventListener( 'beforeinput', onBeforeInput );
-		node.addEventListener( 'keydown', onKeyDown, true );
+		node.addEventListener( 'keydown', onKeyDown );
 		node.addEventListener( 'compositionstart', onCompositionStart );
 		return () => {
 			node.removeEventListener( 'beforeinput', onBeforeInput );
-			node.removeEventListener( 'keydown', onKeyDown, true );
+			node.removeEventListener( 'keydown', onKeyDown );
 			node.removeEventListener( 'compositionstart', onCompositionStart );
 		};
 	}, [] );
