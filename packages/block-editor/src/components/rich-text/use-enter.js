@@ -85,13 +85,11 @@ export function useEnter( props ) {
 			}
 		}
 
-		const { body } = element.ownerDocument;
-
-		// Attach the listener to the body so parent elements have the chance
-		// to prevent the default behavior.
-		body.addEventListener( 'keydown', onKeyDown );
+		// Attach the listener to the document so parent elements have the
+		// chance to prevent the default behavior.
+		element.ownerDocument.addEventListener( 'keydown', onKeyDown );
 		return () => {
-			body.removeEventListener( 'keydown', onKeyDown );
+			element.ownerDocument.removeEventListener( 'keydown', onKeyDown );
 		};
 	}, [] );
 }
