@@ -143,7 +143,8 @@ function persistencePlugin( registry, pluginOptions ) {
 			const reducers = keys.reduce(
 				( accumulator, key ) =>
 					Object.assign( accumulator, {
-						[ key ]: ( state, action ) => action.nextState[ key ],
+						[ key ]: ( state, action ) =>
+							action.nextState?.[ key ] ?? null,
 					} ),
 				{}
 			);

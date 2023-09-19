@@ -117,7 +117,7 @@ export function taxonomies( state = [], action ) {
  *
  * @return {string|undefined} Updated state.
  */
-export function currentTheme( state = undefined, action ) {
+export function currentTheme( state = null, action ) {
 	switch ( action.type ) {
 		case 'RECEIVE_CURRENT_THEME':
 			return action.currentTheme.stylesheet;
@@ -134,7 +134,7 @@ export function currentTheme( state = undefined, action ) {
  *
  * @return {string|undefined} Updated state.
  */
-export function currentGlobalStylesId( state = undefined, action ) {
+export function currentGlobalStylesId( state = null, action ) {
 	switch ( action.type ) {
 		case 'RECEIVE_CURRENT_GLOBAL_STYLES_ID':
 			return action.id;

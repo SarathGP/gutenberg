@@ -1532,10 +1532,7 @@ function blockRemovalRules( state = false, action ) {
  * @return {number|null} Initial position: 0, -1 or null.
  */
 export function initialPosition( state = null, action ) {
-	if (
-		action.type === 'REPLACE_BLOCKS' &&
-		action.initialPosition !== undefined
-	) {
+	if ( action.type === 'REPLACE_BLOCKS' && action.initialPosition !== null ) {
 		return action.initialPosition;
 	} else if (
 		[
@@ -1822,7 +1819,7 @@ export function lastBlockAttributesChange( state = null, action ) {
  *
  * @return {string} Updated state.
  */
-export function highlightedBlock( state, action ) {
+export function highlightedBlock( state = null, action ) {
 	switch ( action.type ) {
 		case 'TOGGLE_BLOCK_HIGHLIGHT':
 			const { clientId, isHighlighted } = action;

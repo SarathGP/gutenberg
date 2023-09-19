@@ -31,7 +31,7 @@ export default function SidebarNavigationScreenMain() {
 	// Clear the editor canvas container view when accessing the main navigation screen.
 	useEffect( () => {
 		if ( location?.path === '/' ) {
-			setEditorCanvasContainerView( undefined );
+			setEditorCanvasContainerView( null );
 		}
 	}, [ setEditorCanvasContainerView, location?.path ] );
 

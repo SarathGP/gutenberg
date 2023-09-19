@@ -52,7 +52,7 @@ export default function GlobalStylesSidebar() {
 
 	useEffect( () => {
 		if ( shouldClearCanvasContainerView ) {
-			setEditorCanvasContainerView( undefined );
+			setEditorCanvasContainerView( null );
 		}
 	}, [ shouldClearCanvasContainerView ] );
 

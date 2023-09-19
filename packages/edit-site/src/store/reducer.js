@@ -148,7 +148,7 @@ function canvasMode( state = 'init', action ) {
  * @param {string|undefined} state  Current state.
  * @param {Object}           action Dispatched action.
  */
-function editorCanvasContainerView( state = undefined, action ) {
+function editorCanvasContainerView( state = null, action ) {
 	switch ( action.type ) {
 		case 'SET_EDITOR_CANVAS_CONTAINER_VIEW':
 			return action.view;

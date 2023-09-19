@@ -90,7 +90,7 @@ function EditorCanvasContainer( {
 			onClose();
 		}
 		setIsListViewOpened( showListViewByDefault );
-		setEditorCanvasContainerView( undefined );
+		setEditorCanvasContainerView( null );
 		setIsClosed( true );
 	}
 

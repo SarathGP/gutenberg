@@ -114,7 +114,7 @@ export const validateBlocksToTemplate =
 export function resetSelection(
 	selectionStart,
 	selectionEnd,
-	initialPosition
+	initialPosition = null
 ) {
 	/* eslint-enable jsdoc/valid-types */
 	return {
