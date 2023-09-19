@@ -4,7 +4,7 @@
 
 ## Enhancements
 
--   Use `React` as the default scope variable for JSX pragma instead of `@wordpress/element`.
+-   Use `react` as the default scope variable for JSX pragma instead of `@wordpress/element`.
 
 ## 7.25.0 (2023-08-31)
 
