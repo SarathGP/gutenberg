@@ -58,9 +58,14 @@ export const getEntityRecord =
 	( kind, name, key = '', query ) =>
 	async ( { select, dispatch } ) => {
 		const configs = await dispatch( getOrLoadEntitiesConfig( kind ) );
+		// @TODO Create predictable parsing rules for names like post:[key]:revisions.
+		const splitName = name.split( ':' )[ 0 ];
 		const entityConfig = configs.find(
-			( config ) => config.name === name && config.kind === kind
+			( config ) => config.name === splitName && config.kind === kind
 		);
+		const isRevisionEntityRecord =
+			entityConfig?.supports?.revisions &&
+			name.split( ':' )?.[ 2 ] === 'revisions';
 		if ( ! entityConfig || entityConfig?.__experimentalNoFetch ) {
 			return;
 		}
@@ -73,10 +78,12 @@ export const getEntityRecord =
 
 		try {
 			// Entity supports configs,
-			// use the sync algorithm instead of the old fetch behavior.
+			// use the sync algorithm instead of the old fetch behavior,
+			// but not for revisions. @TODO check this.
 			if (
 				window.__experimentalEnableSync &&
 				entityConfig.syncConfig &&
+				! isRevisionEntityRecord &&
 				! query
 			) {
 				if ( process.env.IS_GUTENBERG_PLUGIN ) {
@@ -138,33 +145,71 @@ export const getEntityRecord =
 				// modifications are relevant to how the data is tracked in state, and not
 				// for how the request is made to the REST API.
 
-				// eslint-disable-next-line @wordpress/no-unused-vars-before-return
-				const path = addQueryArgs(
-					entityConfig.baseURL + ( key ? '/' + key : '' ),
-					{
-						...entityConfig.baseURLParams,
-						...query,
-					}
-				);
+				// @TODO this is a mess.
+				// @TODO Create predictable URL building rules for names like post:[key]:revisions.
+				// @TODO Possibly `entityConfig.getRevisionsUrl( { name } )?
+				let path;
+				if ( isRevisionEntityRecord ) {
+					const [ , parentKey ] = name.split( ':' );
+					path = addQueryArgs(
+						`${ entityConfig.baseURL }/${ parentKey }/revisions${
+							key ? '/' + key : ''
+						}`,
+						{
+							// @TODO check if this is the default for revisions (should be view?). Is there anything else?
+							context: 'view',
+							...query,
+						}
+					);
+				} else {
+					path = addQueryArgs(
+						entityConfig.baseURL + ( key ? '/' + key : '' ),
+						{
+							...entityConfig.baseURLParams,
+							...query,
+						}
+					);
+				}
 
 				if ( query !== undefined ) {
-					query = { ...query, include: [ key ] };
+					query = isRevisionEntityRecord
+						? { context: 'view', ...query, include: [ key ] }
+						: { ...query, include: [ key ] };
 
 					// The resolution cache won't consider query as reusable based on the
 					// fields, so it's tested here, prior to initiating the REST request,
 					// and without causing `getEntityRecords` resolution to occur.
+					// @TODO how to handle revisions here?
+					// @TODO will it know if a new revision has been created?
 					const hasRecords = select.hasEntityRecords(
 						kind,
 						name,
 						query
 					);
+
 					if ( hasRecords ) {
 						return;
 					}
 				}
 
 				const record = await apiFetch( { path } );
-				dispatch.receiveEntityRecords( kind, name, record, query );
+				// @TODO just dispatching here to send the action type.
+				if ( isRevisionEntityRecord ) {
+					dispatch( {
+						type: 'RECEIVE_ITEM_REVISIONS',
+						kind,
+						name,
+						items: [ record ],
+						query: {
+							// @TODO check if this is the default for revisions (should be view?). Is there anything else?
+							context: 'view',
+							...query,
+						},
+						invalidateCache: false,
+					} );
+				} else {
+					dispatch.receiveEntityRecords( kind, name, record, query );
+				}
 			}
 		} finally {
 			dispatch.__unstableReleaseStoreLock( lock );
@@ -238,13 +283,11 @@ export const getEntityRecords =
 				path = addQueryArgs(
 					`${ entityConfig.baseURL }/${ parentKey }/revisions`,
 					{
-						...{
-							// @TODO Default query params for revisions should be defined in the entity config?
-							order: 'desc',
-							orderby: 'date',
-							// @TODO check if this is the default for revisions (should be view?). Is there anything else?
-							context: 'view',
-						},
+						// @TODO Default query params for revisions should be defined in the entity config?
+						order: 'desc',
+						orderby: 'date',
+						// @TODO check if this is the default for revisions (should be view?). Is there anything else?
+						context: 'view',
 						...query,
 					}
 				);
@@ -280,13 +323,11 @@ export const getEntityRecords =
 					name,
 					items: records,
 					query: {
-						...{
-							// @TODO Default query params for revisions should be defined in the entity config?
-							order: 'desc',
-							orderby: 'date',
-							// @TODO check if this is the default for revisions (should be view?). Is there anything else?
-							context: 'view',
-						},
+						// @TODO Default query params for revisions should be defined in the entity config?
+						order: 'desc',
+						orderby: 'date',
+						// @TODO check if this is the default for revisions (should be view?). Is there anything else?
+						context: 'view',
 						...query,
 					},
 					invalidateCache: false,
@@ -319,13 +360,16 @@ export const getEntityRecords =
 			dispatch.__unstableReleaseStoreLock( lock );
 		}
 	};
-
+// @TODO work out how to invalidate revisions. At the moment, adding a new post revisions doesn't update the state.
 getEntityRecords.shouldInvalidate = ( action, kind, name ) => {
+	const splitName = name.split( ':' )[ 0 ];
 	return (
-		( action.type === 'RECEIVE_ITEMS' || action.type === 'REMOVE_ITEMS' ) &&
+		( action.type === 'RECEIVE_ITEMS' ||
+			action.type === 'REMOVE_ITEMS' ||
+			action.type === 'RECEIVE_ITEM_REVISIONS' ) &&
 		action.invalidateCache &&
 		kind === action.kind &&
-		name === action.name
+		splitName === action.name
 	);
 };
 

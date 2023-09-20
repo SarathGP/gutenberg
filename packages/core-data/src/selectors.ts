@@ -321,14 +321,32 @@ export const getEntityRecord = createSelector(
 		key: EntityRecordKey,
 		query?: GetRecordsHttpQuery
 	): EntityRecord | undefined => {
-		const queriedState =
-			state.entities.records?.[ kind ]?.[ name ]?.queriedData;
+		// @TODO this is a mess.
+		// @TODO Create predictable parsing rules for names like post:[key]:revisions.
+		// @TODO update the resolver to fetch the revision item.
+		const splitName = name?.split( ':' );
+		const isRevision = splitName?.[ 2 ] === 'revisions';
+
+		const queriedState = isRevision
+			? state.entities.records?.[ kind ]?.[ splitName[ 0 ] ]?.revisions[
+					splitName[ 1 ]
+			  ]
+			: state.entities.records?.[ kind ]?.[ name ]?.queriedData;
 		if ( ! queriedState ) {
 			return undefined;
 		}
-		const context = query?.context ?? 'default';
 
-		if ( query === undefined ) {
+		const queryParams = isRevision
+			? {
+					// @TODO check if this is the default for revisions (should be view?). Is there anything else?
+					context: 'view',
+					...query,
+			  }
+			: query;
+
+		const context = queryParams?.context ?? 'default';
+
+		if ( queryParams === undefined ) {
 			// If expecting a complete item, validate that completeness.
 			if ( ! queriedState.itemIsComplete[ context ]?.[ key ] ) {
 				return undefined;
@@ -338,9 +356,10 @@ export const getEntityRecord = createSelector(
 		}
 
 		const item = queriedState.items[ context ]?.[ key ];
-		if ( item && query._fields ) {
+		if ( item && queryParams._fields ) {
 			const filteredItem = {};
-			const fields = getNormalizedCommaSeparable( query._fields ) ?? [];
+			const fields =
+				getNormalizedCommaSeparable( queryParams._fields ) ?? [];
 			for ( let f = 0; f < fields.length; f++ ) {
 				const field = fields[ f ].split( '.' );
 				let value = item;
@@ -355,13 +374,33 @@ export const getEntityRecord = createSelector(
 		return item;
 	} ) as GetEntityRecord,
 	( state: State, kind, name, recordId, query ) => {
-		const context = query?.context ?? 'default';
+		// @TODO this is a mess.
+		// @TODO Create predictable parsing rules for names like post:[key]:revisions.
+		const splitName = name?.split( ':' );
+		const isRevision = splitName?.[ 2 ] === 'revisions';
+		const queryParams = isRevision
+			? {
+					// @TODO check if this is the default for revisions (should be view?). Is there anything else?
+					context: 'view',
+					...query,
+			  }
+			: query;
+
+		const context = queryParams?.context ?? 'default';
+
 		return [
-			state.entities.records?.[ kind ]?.[ name ]?.queriedData?.items[
-				context
-			]?.[ recordId ],
-			state.entities.records?.[ kind ]?.[ name ]?.queriedData
-				?.itemIsComplete[ context ]?.[ recordId ],
+			isRevision
+				? state.entities.records?.[ kind ]?.[ splitName[ 0 ] ]
+						?.revisions[ splitName[ 1 ] ]?.items[ recordId ]
+				: state.entities.records?.[ kind ]?.[ name ]?.queriedData
+						?.items[ context ]?.[ recordId ],
+			isRevision
+				? state.entities.records?.[ kind ]?.[ splitName[ 0 ] ]
+						?.revisions[ splitName[ 1 ] ]?.itemIsComplete[
+						context
+				  ]?.[ recordId ]
+				: state.entities.records?.[ kind ]?.[ name ]?.queriedData
+						?.itemIsComplete[ context ]?.[ recordId ],
 		];
 	}
 ) as GetEntityRecord;
@@ -518,12 +557,13 @@ export const getEntityRecords = ( <
 	// assigned for the given parameters, then it is known to not exist.
 	// @TODO this is a mess.
 	// @TODO Create predictable parsing rules for names like post:[key]:revisions.
-	const splitName = name.split( ':' );
+	const splitName = name?.split( ':' );
 	if ( splitName?.[ 2 ] === 'revisions' ) {
 		const queriedStateRevisions =
 			state.entities.records?.[ kind ]?.[ splitName[ 0 ] ]?.revisions[
 				splitName[ 1 ]
 			];
+
 		if ( ! queriedStateRevisions ) {
 			return null;
 		}
@@ -534,20 +574,6 @@ export const getEntityRecords = ( <
 			// @TODO check if this is the default for revisions (should be view?). Is there anything else?
 			context: 'view',
 		};
-		const test = getQueriedItems(
-			queriedStateRevisions,
-			{
-				...{
-					// @TODO Default query params for revisions should be defined in the entity config?
-					order: 'desc',
-					orderby: 'date',
-					// @TODO check if this is the default for revisions (should be view?). Is there anything else?
-					context: 'default',
-				},
-				...query,
-			},
-			splitName[ 1 ]
-		);
 
 		return getQueriedItems( queriedStateRevisions, {
 			...query,
