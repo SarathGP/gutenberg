@@ -20,7 +20,7 @@ import { store as editSiteStore } from '../../store';
 const { useHistory } = unlock( routerPrivateApis );
 const { CreatePatternModal } = unlock( editPatternsPrivateApis );
 
-export default function AddNewPattern() {
+export default function AddNewPattern( { renderTrigger } ) {
 	const history = useHistory();
 	const [ showPatternModal, setShowPatternModal ] = useState( false );
 	const [ showTemplatePartModal, setShowTemplatePartModal ] =
@@ -78,14 +78,21 @@ export default function AddNewPattern() {
 
 	return (
 		<>
-			<DropdownMenu
-				controls={ controls }
-				toggleProps={ {
-					as: SidebarButton,
-				} }
-				icon={ plus }
-				label={ __( 'Create pattern' ) }
-			/>
+			{ renderTrigger ? (
+				renderTrigger( {
+					setShowPatternModal,
+					setShowTemplatePartModal,
+				} )
+			) : (
+				<DropdownMenu
+					controls={ controls }
+					toggleProps={ {
+						as: SidebarButton,
+					} }
+					icon={ plus }
+					label={ __( 'Create pattern' ) }
+				/>
+			) }
 			{ showPatternModal && (
 				<CreatePatternModal
 					onClose={ () => setShowPatternModal( false ) }
