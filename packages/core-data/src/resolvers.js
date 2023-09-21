@@ -317,6 +317,20 @@ export const getEntityRecords =
 
 			// @TODO just dispatching here to send the action type.
 			if ( isRevisionEntityRecords ) {
+				const [ postType, revisionParentKey ] = name.split( ':' );
+				const existingRecords = select.getEntityRecords(
+					'postType',
+					`${ postType }:${ revisionParentKey }:revisions`,
+					{
+						// @TODO Default query params for revisions should be defined in the entity config?
+						order: 'desc',
+						orderby: 'date',
+						// @TODO check if this is the default for revisions (should be view?). Is there anything else?
+						context: 'view',
+						...query,
+					}
+				);
+				console.log( 'existingRecords, records', existingRecords, records );
 				dispatch( {
 					type: 'RECEIVE_ITEM_REVISIONS',
 					kind,
@@ -330,7 +344,8 @@ export const getEntityRecords =
 						context: 'view',
 						...query,
 					},
-					invalidateCache: false,
+					invalidateCache:
+						existingRecords?.length !== records?.length,
 				} );
 			} else {
 				dispatch.receiveEntityRecords( kind, name, records, query );
@@ -361,15 +376,23 @@ export const getEntityRecords =
 		}
 	};
 // @TODO work out how to invalidate revisions. At the moment, adding a new post revisions doesn't update the state.
+// @TODO I think it's only returning revisions equal to the number of posts, not the number of revisions.
+// @TODO That means we need to decouple revision resolves from the post ones?
 getEntityRecords.shouldInvalidate = ( action, kind, name ) => {
-	const splitName = name.split( ':' )[ 0 ];
+	if ( action.type === 'RECEIVE_ITEM_REVISIONS' && name === action.name ) {
+		console.log( 'action', action, kind, name );
+		return (
+			action.invalidateCache &&
+			kind === action.kind &&
+			name === action.name
+		);
+	}
+
 	return (
-		( action.type === 'RECEIVE_ITEMS' ||
-			action.type === 'REMOVE_ITEMS' ||
-			action.type === 'RECEIVE_ITEM_REVISIONS' ) &&
+		( action.type === 'RECEIVE_ITEMS' || action.type === 'REMOVE_ITEMS' ) &&
 		action.invalidateCache &&
 		kind === action.kind &&
-		splitName === action.name
+		name === action.name
 	);
 };
 
