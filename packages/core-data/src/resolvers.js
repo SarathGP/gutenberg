@@ -330,7 +330,7 @@ export const getEntityRecords =
 						...query,
 					}
 				);
-				console.log( 'existingRecords, records', existingRecords, records );
+				console.log( 'existingRecords, records, shouldInvalidate?', existingRecords, records, existingRecords?.length !== records?.length );
 				dispatch( {
 					type: 'RECEIVE_ITEM_REVISIONS',
 					kind,
