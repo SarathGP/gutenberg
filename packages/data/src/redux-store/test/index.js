@@ -94,7 +94,7 @@ describe( 'controls', () => {
 	describe( 'selectors have expected value for the `hasResolver` property', () => {
 		it( 'when custom store has resolvers defined', () => {
 			registry.registerStore( 'store', {
-				reducer: jest.fn(),
+				reducer: () => null,
 				selectors: {
 					getItems: ( state ) => state,
 					getItem: ( state ) => state,
@@ -114,7 +114,7 @@ describe( 'controls', () => {
 		} );
 		it( 'when custom store does not have resolvers defined', () => {
 			registry.registerStore( 'store', {
-				reducer: jest.fn(),
+				reducer: () => null,
 				selectors: {
 					getItems: ( state ) => state,
 				},
@@ -143,7 +143,7 @@ describe( 'controls', () => {
 		};
 		beforeEach( () => {
 			registry.registerStore( 'store', {
-				reducer: () => {},
+				reducer: () => null,
 				controls: {
 					TEST_PROMISE() {
 						return new Promise( ( resolve ) => resolve( 10 ) );
@@ -203,7 +203,7 @@ describe( 'controls', () => {
 		};
 		beforeEach( () => {
 			registry.registerStore( 'store', {
-				reducer: () => {},
+				reducer: () => null,
 				actions,
 			} );
 		} );
