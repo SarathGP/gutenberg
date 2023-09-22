@@ -87,7 +87,6 @@ const Template: StoryFn< typeof Modal > = ( { onRequestClose, ...args } ) => {
 export const Default: StoryFn< typeof Modal > = Template.bind( {} );
 Default.args = {
 	title: 'Title',
-	style: { maxWidth: '600px' },
 };
 Default.parameters = {
 	docs: {
