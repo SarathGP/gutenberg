@@ -27,6 +27,7 @@ import {
 import { __ } from '@wordpress/i18n';
 import { close } from '@wordpress/icons';
 import { getScrollContainer } from '@wordpress/dom';
+import deprecated from '@wordpress/deprecated';
 
 /**
  * Internal dependencies
@@ -86,7 +87,18 @@ function UnforwardedModal(
 	const [ hasScrolledContent, setHasScrolledContent ] = useState( false );
 	const [ hasScrollableContent, setHasScrollableContent ] = useState( false );
 
-	const contentWidthClass = contentWidth ? `has-width-${ contentWidth }` : '';
+	const contentWidthClass =
+		contentWidth && contentWidth !== 'fill'
+			? `has-width-${ contentWidth }`
+			: '';
+
+	if ( !! isFullScreen ) {
+		deprecated( '`isFullScreen` prop for wp.components.Modal', {
+			since: '6.4',
+			version: '6.7',
+			hint: 'Set the `contentWidth` prop to `fill` instead.',
+		} );
+	}
 
 	// Determines whether the Modal content is scrollable and updates the state.
 	const isContentScrollable = useCallback( () => {
@@ -219,7 +231,8 @@ function UnforwardedModal(
 						'components-modal__frame',
 						className,
 						{
-							'is-full-screen': isFullScreen,
+							'is-full-screen':
+								isFullScreen || contentWidth === 'fill',
 						}
 					) }
 					style={ style }
@@ -243,7 +256,10 @@ function UnforwardedModal(
 							'hide-header': __experimentalHideHeader,
 							'is-scrollable': hasScrollableContent,
 							'has-scrolled-content': hasScrolledContent,
-							[ contentWidthClass ]: ! isFullScreen,
+							[ contentWidthClass ]:
+								! isFullScreen &&
+								contentWidth &&
+								contentWidth !== 'fill',
 						} ) }
 						role="document"
 						onScroll={ onContentContainerScroll }
