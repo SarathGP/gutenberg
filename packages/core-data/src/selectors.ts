@@ -567,6 +567,7 @@ export const getEntityRecords = ( <
 		if ( ! queriedStateRevisions ) {
 			return null;
 		}
+		console.log( 'state.entities.records?.[ kind ]?.[ splitName[ 0 ] ]?.revisions', state.entities.records?.[ kind ]?.[ splitName[ 0 ] ]?.revisions );
 		const extraQueryParams = {
 			// @TODO Default query params for revisions should be defined in the entity config?
 			order: 'desc',

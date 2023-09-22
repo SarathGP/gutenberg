@@ -375,9 +375,7 @@ export const getEntityRecords =
 			dispatch.__unstableReleaseStoreLock( lock );
 		}
 	};
-// @TODO work out how to invalidate revisions. At the moment, adding a new post revisions doesn't update the state.
-// @TODO I think it's only returning revisions equal to the number of posts, not the number of revisions.
-// @TODO That means we need to decouple revision resolves from the post ones?
+// @TODO work out how to invalidate revisions. At the moment, adding a new post revisions doesn't update the state without page refresh.
 getEntityRecords.shouldInvalidate = ( action, kind, name ) => {
 	if ( action.type === 'RECEIVE_ITEM_REVISIONS' && name === action.name ) {
 		console.log( 'action', action, kind, name );
