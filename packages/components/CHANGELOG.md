@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Internal
+
+-   `SlotFill`: Migrate to TypeScript and Convert to Functional Component `<Slot bubblesVirtually />`. ([#51350](https://github.com/WordPress/gutenberg/pull/51350)).
+
 ## 25.8.0 (2023-09-20)
 
 ### Enhancements
@@ -44,7 +48,6 @@
 -   `Button`: Update documentation to remove the button `focus` prop ([#54397](https://github.com/WordPress/gutenberg/pull/54397)).
 -   `Toolbar/ToolbarGroup`: Convert component to TypeScript ([#54317](https://github.com/WordPress/gutenberg/pull/54317)).
 -   `Modal`: add more unit tests ([#54569](https://github.com/WordPress/gutenberg/pull/54569)).
--   `SlotFill`: Migrate to TypeScript and Convert to Functional Component `<Slot bubblesVirtually />`. ([#51350](https://github.com/WordPress/gutenberg/pull/51350)).
 
 ### Experimental
 
