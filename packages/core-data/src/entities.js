@@ -319,6 +319,12 @@ async function loadPostTypeEntities() {
 			},
 			syncObjectType: 'postType/' + postType.name,
 			getSyncObjectId: ( id ) => id,
+			getRevisionsUrl: ( parentId, revisionId ) =>
+				`/${ namespace }/${
+					postType.rest_base
+				}/${ parentId }/revisions${
+					revisionId ? '/' + revisionId : ''
+				}`,
 		};
 	} );
 }

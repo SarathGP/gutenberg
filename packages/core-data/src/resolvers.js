@@ -152,9 +152,7 @@ export const getEntityRecord =
 				if ( isRevisionEntityRecord ) {
 					const [ , parentKey ] = name.split( ':' );
 					path = addQueryArgs(
-						`${ entityConfig.baseURL }/${ parentKey }/revisions${
-							key ? '/' + key : ''
-						}`,
+						entityConfig.getRevisionsUrl( parentKey, key ),
 						{
 							// @TODO check if this is the default for revisions (should be view?). Is there anything else?
 							context: 'view',
@@ -205,7 +203,6 @@ export const getEntityRecord =
 							context: 'view',
 							...query,
 						},
-						invalidateCache: false,
 					} );
 				} else {
 					dispatch.receiveEntityRecords( kind, name, record, query );
@@ -236,7 +233,7 @@ export const getEditedEntityRecord = forwardResolver( 'getEntityRecord' );
  */
 export const getEntityRecords =
 	( kind, name, query = {} ) =>
-	async ( { dispatch, select } ) => {
+	async ( { dispatch } ) => {
 		const configs = await dispatch( getOrLoadEntitiesConfig( kind ) );
 		// @TODO Create predictable parsing rules for names like post:[key]:revisions.
 		const splitName = name.split( ':' )[ 0 ];
@@ -281,7 +278,7 @@ export const getEntityRecords =
 			if ( isRevisionEntityRecords ) {
 				const [ , parentKey ] = name.split( ':' );
 				path = addQueryArgs(
-					`${ entityConfig.baseURL }/${ parentKey }/revisions`,
+					entityConfig.getRevisionsUrl( parentKey ),
 					{
 						// @TODO Default query params for revisions should be defined in the entity config?
 						order: 'desc',
@@ -317,20 +314,6 @@ export const getEntityRecords =
 
 			// @TODO just dispatching here to send the action type.
 			if ( isRevisionEntityRecords ) {
-				const [ postType, revisionParentKey ] = name.split( ':' );
-				const existingRecords = select.getEntityRecords(
-					'postType',
-					`${ postType }:${ revisionParentKey }:revisions`,
-					{
-						// @TODO Default query params for revisions should be defined in the entity config?
-						order: 'desc',
-						orderby: 'date',
-						// @TODO check if this is the default for revisions (should be view?). Is there anything else?
-						context: 'view',
-						...query,
-					}
-				);
-				console.log( 'existingRecords, records, shouldInvalidate?', existingRecords, records, existingRecords?.length !== records?.length );
 				dispatch( {
 					type: 'RECEIVE_ITEM_REVISIONS',
 					kind,
@@ -344,8 +327,8 @@ export const getEntityRecords =
 						context: 'view',
 						...query,
 					},
-					invalidateCache:
-						existingRecords?.length !== records?.length,
+					invalidateCache: true,
+
 				} );
 			} else {
 				dispatch.receiveEntityRecords( kind, name, records, query );
@@ -375,14 +358,16 @@ export const getEntityRecords =
 			dispatch.__unstableReleaseStoreLock( lock );
 		}
 	};
-// @TODO work out how to invalidate revisions. At the moment, adding a new post revisions doesn't update the state without page refresh.
+
 getEntityRecords.shouldInvalidate = ( action, kind, name ) => {
-	if ( action.type === 'RECEIVE_ITEM_REVISIONS' && name === action.name ) {
-		console.log( 'action', action, kind, name );
+	// Invalidate cache when a new revision is created.
+	if ( action.type === 'SAVE_ENTITY_RECORD_FINISH' ) {
+		const [ postType, recordId ] = name.split( ':' );
 		return (
-			action.invalidateCache &&
 			kind === action.kind &&
-			name === action.name
+			postType === action.name &&
+			! action.error &&
+			Number( recordId ) === action.recordId
 		);
 	}
 

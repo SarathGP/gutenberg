@@ -20,6 +20,7 @@ import {
 	getNormalizedCommaSeparable,
 	isRawAttribute,
 	setNestedValue,
+	parseEntityName,
 } from './utils';
 import type * as ET from './entity-types';
 import type { UndoManager } from '@wordpress/undo-manager';
@@ -324,12 +325,15 @@ export const getEntityRecord = createSelector(
 		// @TODO this is a mess.
 		// @TODO Create predictable parsing rules for names like post:[key]:revisions.
 		// @TODO update the resolver to fetch the revision item.
-		const splitName = name?.split( ':' );
-		const isRevision = splitName?.[ 2 ] === 'revisions';
+		const {
+			name: parsedName,
+			key: parsedKey,
+			isRevision,
+		} = parseEntityName( name );
 
 		const queriedState = isRevision
-			? state.entities.records?.[ kind ]?.[ splitName[ 0 ] ]?.revisions[
-					splitName[ 1 ]
+			? state.entities.records?.[ kind ]?.[ parsedName[ 0 ] ]?.revisions[
+					parsedKey
 			  ]
 			: state.entities.records?.[ kind ]?.[ name ]?.queriedData;
 		if ( ! queriedState ) {
@@ -374,9 +378,11 @@ export const getEntityRecord = createSelector(
 		return item;
 	} ) as GetEntityRecord,
 	( state: State, kind, name, recordId, query ) => {
-		// @TODO this is a mess.
-		// @TODO Create predictable parsing rules for names like post:[key]:revisions.
-		const splitName = name?.split( ':' );
+		const {
+			name: parsedName,
+			key: parsedKey,
+			isRevision,
+		} = parseEntityName( name );
 		const isRevision = splitName?.[ 2 ] === 'revisions';
 		const queryParams = isRevision
 			? {
@@ -390,15 +396,15 @@ export const getEntityRecord = createSelector(
 
 		return [
 			isRevision
-				? state.entities.records?.[ kind ]?.[ splitName[ 0 ] ]
-						?.revisions[ splitName[ 1 ] ]?.items[ recordId ]
+				? state.entities.records?.[ kind ]?.[ parsedName ]?.revisions[
+						parsedKey
+				  ]?.items[ recordId ]
 				: state.entities.records?.[ kind ]?.[ name ]?.queriedData
 						?.items[ context ]?.[ recordId ],
 			isRevision
-				? state.entities.records?.[ kind ]?.[ splitName[ 0 ] ]
-						?.revisions[ splitName[ 1 ] ]?.itemIsComplete[
-						context
-				  ]?.[ recordId ]
+				? state.entities.records?.[ kind ]?.[ parsedName ]?.revisions[
+						parsedKey
+				  ]?.itemIsComplete[ context ]?.[ recordId ]
 				: state.entities.records?.[ kind ]?.[ name ]?.queriedData
 						?.itemIsComplete[ context ]?.[ recordId ],
 		];
@@ -567,8 +573,7 @@ export const getEntityRecords = ( <
 		if ( ! queriedStateRevisions ) {
 			return null;
 		}
-		console.log( 'state.entities.records?.[ kind ]?.[ splitName[ 0 ] ]?.revisions', state.entities.records?.[ kind ]?.[ splitName[ 0 ] ]?.revisions );
-		const extraQueryParams = {
+		const defaultQueryParams = {
 			// @TODO Default query params for revisions should be defined in the entity config?
 			order: 'desc',
 			orderby: 'date',
@@ -578,7 +583,7 @@ export const getEntityRecords = ( <
 
 		return getQueriedItems( queriedStateRevisions, {
 			...query,
-			...extraQueryParams,
+			...defaultQueryParams,
 		} );
 	}
 
