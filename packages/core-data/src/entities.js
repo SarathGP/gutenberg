@@ -325,6 +325,7 @@ async function loadPostTypeEntities() {
 				}/${ parentId }/revisions${
 					revisionId ? '/' + revisionId : ''
 				}`,
+			revisionURLParams: { context: 'view' },
 		};
 	} );
 }

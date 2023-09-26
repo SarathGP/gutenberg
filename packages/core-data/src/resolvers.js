@@ -14,7 +14,11 @@ import apiFetch from '@wordpress/api-fetch';
  */
 import { STORE_NAME } from './name';
 import { getOrLoadEntitiesConfig, DEFAULT_ENTITY_KEY } from './entities';
-import { forwardResolver, getNormalizedCommaSeparable } from './utils';
+import {
+	forwardResolver,
+	getNormalizedCommaSeparable,
+	parseEntityName,
+} from './utils';
 import { getSyncProvider } from './sync';
 
 /**
@@ -58,14 +62,19 @@ export const getEntityRecord =
 	( kind, name, key = '', query ) =>
 	async ( { select, dispatch } ) => {
 		const configs = await dispatch( getOrLoadEntitiesConfig( kind ) );
-		// @TODO Create predictable parsing rules for names like post:[key]:revisions.
-		const splitName = name.split( ':' )[ 0 ];
+		const {
+			name: parsedName,
+			key: parsedKey,
+			isRevision,
+		} = parseEntityName( name );
 		const entityConfig = configs.find(
-			( config ) => config.name === splitName && config.kind === kind
+			( config ) => config.name === parsedName && config.kind === kind
 		);
-		const isRevisionEntityRecord =
-			entityConfig?.supports?.revisions &&
-			name.split( ':' )?.[ 2 ] === 'revisions';
+
+		if ( isRevision && ! entityConfig?.supports?.revisions ) {
+			return;
+		}
+
 		if ( ! entityConfig || entityConfig?.__experimentalNoFetch ) {
 			return;
 		}
@@ -83,7 +92,7 @@ export const getEntityRecord =
 			if (
 				window.__experimentalEnableSync &&
 				entityConfig.syncConfig &&
-				! isRevisionEntityRecord &&
+				! isRevision &&
 				! query
 			) {
 				if ( process.env.IS_GUTENBERG_PLUGIN ) {
@@ -149,13 +158,11 @@ export const getEntityRecord =
 				// @TODO Create predictable URL building rules for names like post:[key]:revisions.
 				// @TODO Possibly `entityConfig.getRevisionsUrl( { name } )?
 				let path;
-				if ( isRevisionEntityRecord ) {
-					const [ , parentKey ] = name.split( ':' );
+				if ( isRevision ) {
 					path = addQueryArgs(
-						entityConfig.getRevisionsUrl( parentKey, key ),
+						entityConfig.getRevisionsUrl( parsedKey, key ),
 						{
-							// @TODO check if this is the default for revisions (should be view?). Is there anything else?
-							context: 'view',
+							...entityConfig.revisionURLParams,
 							...query,
 						}
 					);
@@ -170,9 +177,7 @@ export const getEntityRecord =
 				}
 
 				if ( query !== undefined ) {
-					query = isRevisionEntityRecord
-						? { context: 'view', ...query, include: [ key ] }
-						: { ...query, include: [ key ] };
+					query = { ...query, include: [ key ] };
 
 					// The resolution cache won't consider query as reusable based on the
 					// fields, so it's tested here, prior to initiating the REST request,
@@ -192,17 +197,13 @@ export const getEntityRecord =
 
 				const record = await apiFetch( { path } );
 				// @TODO just dispatching here to send the action type.
-				if ( isRevisionEntityRecord ) {
+				if ( isRevision ) {
 					dispatch( {
 						type: 'RECEIVE_ITEM_REVISIONS',
 						kind,
 						name,
 						items: [ record ],
-						query: {
-							// @TODO check if this is the default for revisions (should be view?). Is there anything else?
-							context: 'view',
-							...query,
-						},
+						query,
 					} );
 				} else {
 					dispatch.receiveEntityRecords( kind, name, record, query );
@@ -235,15 +236,20 @@ export const getEntityRecords =
 	( kind, name, query = {} ) =>
 	async ( { dispatch } ) => {
 		const configs = await dispatch( getOrLoadEntitiesConfig( kind ) );
-		// @TODO Create predictable parsing rules for names like post:[key]:revisions.
-		const splitName = name.split( ':' )[ 0 ];
+		const {
+			name: parsedName,
+			key: parsedKey,
+			isRevision,
+		} = parseEntityName( name );
 
 		const entityConfig = configs.find(
-			( config ) => config.name === splitName && config.kind === kind
+			( config ) => config.name === parsedName && config.kind === kind
 		);
-		const isRevisionEntityRecords =
-			entityConfig?.supports?.revisions &&
-			name.split( ':' )?.[ 2 ] === 'revisions';
+
+		if ( isRevision && ! entityConfig?.supports?.revisions ) {
+			return;
+		}
+
 		if ( ! entityConfig || entityConfig?.__experimentalNoFetch ) {
 			return;
 		}
@@ -271,20 +277,12 @@ export const getEntityRecords =
 				};
 			}
 
-			// @TODO this is a mess.
-			// @TODO Create predictable URL building rules for names like post:[key]:revisions.
-			// @TODO Possibly `entityConfig.getRevisionsUrl( { name } )?
 			let path;
-			if ( isRevisionEntityRecords ) {
-				const [ , parentKey ] = name.split( ':' );
+			if ( isRevision ) {
 				path = addQueryArgs(
-					entityConfig.getRevisionsUrl( parentKey ),
+					entityConfig.getRevisionsUrl( parsedKey ),
 					{
-						// @TODO Default query params for revisions should be defined in the entity config?
-						order: 'desc',
-						orderby: 'date',
-						// @TODO check if this is the default for revisions (should be view?). Is there anything else?
-						context: 'view',
+						...entityConfig.revisionURLParams,
 						...query,
 					}
 				);
@@ -313,22 +311,13 @@ export const getEntityRecords =
 			}
 
 			// @TODO just dispatching here to send the action type.
-			if ( isRevisionEntityRecords ) {
+			if ( isRevision ) {
 				dispatch( {
 					type: 'RECEIVE_ITEM_REVISIONS',
 					kind,
 					name,
 					items: records,
-					query: {
-						// @TODO Default query params for revisions should be defined in the entity config?
-						order: 'desc',
-						orderby: 'date',
-						// @TODO check if this is the default for revisions (should be view?). Is there anything else?
-						context: 'view',
-						...query,
-					},
-					invalidateCache: true,
-
+					query,
 				} );
 			} else {
 				dispatch.receiveEntityRecords( kind, name, records, query );

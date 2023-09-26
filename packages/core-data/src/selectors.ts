@@ -383,7 +383,6 @@ export const getEntityRecord = createSelector(
 			key: parsedKey,
 			isRevision,
 		} = parseEntityName( name );
-		const isRevision = splitName?.[ 2 ] === 'revisions';
 		const queryParams = isRevision
 			? {
 					// @TODO check if this is the default for revisions (should be view?). Is there anything else?
@@ -561,30 +560,20 @@ export const getEntityRecords = ( <
 ): EntityRecord[] | null => {
 	// Queried data state is prepopulated for all known entities. If this is not
 	// assigned for the given parameters, then it is known to not exist.
-	// @TODO this is a mess.
-	// @TODO Create predictable parsing rules for names like post:[key]:revisions.
-	const splitName = name?.split( ':' );
-	if ( splitName?.[ 2 ] === 'revisions' ) {
+	const {
+		name: parsedName,
+		key: parsedKey,
+		isRevision,
+	} = parseEntityName( name );
+	if ( isRevision ) {
 		const queriedStateRevisions =
-			state.entities.records?.[ kind ]?.[ splitName[ 0 ] ]?.revisions[
-				splitName[ 1 ]
+			state.entities.records?.[ kind ]?.[ parsedName ]?.revisions[
+				parsedKey
 			];
-
 		if ( ! queriedStateRevisions ) {
 			return null;
 		}
-		const defaultQueryParams = {
-			// @TODO Default query params for revisions should be defined in the entity config?
-			order: 'desc',
-			orderby: 'date',
-			// @TODO check if this is the default for revisions (should be view?). Is there anything else?
-			context: 'view',
-		};
-
-		return getQueriedItems( queriedStateRevisions, {
-			...query,
-			...defaultQueryParams,
-		} );
+		return getQueriedItems( queriedStateRevisions, query );
 	}
 
 	const queriedState =
